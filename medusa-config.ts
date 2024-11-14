@@ -22,20 +22,21 @@ module.exports = defineConfig({
     backendUrl: process.env.BACKEND_URL || "http://localhost:9000",
   },
   modules: [
-    {
-      resolve: "@medusajs/medusa/payment",
-      options: {
-        providers: [
-          {
-            resolve: "@medusajs/medusa/payment-stripe",
-            id: "stripe",
-            options: {
-              apiKey: process.env.STRIPE_SECRET_KEY,
-            },
-          },
-        ],
-      },
-    },
+    // TODO: Comment out for testing purposes
+    // {
+    //   resolve: "@medusajs/medusa/payment",
+    //   options: {
+    //     providers: [
+    //       {
+    //         resolve: "@medusajs/medusa/payment-stripe",
+    //         id: "stripe",
+    //         options: {
+    //           apiKey: process.env.STRIPE_SECRET_KEY,
+    //         },
+    //       },
+    //     ],
+    //   },
+    // },
     {
       resolve: "@medusajs/medusa/file",
       options: {
