@@ -18,6 +18,9 @@ module.exports = defineConfig({
       cookieSecret: process.env.COOKIE_SECRET || "supersecret",
     },
   },
+  admin: {
+    backendUrl: process.env.BACKEND_URL || "http://localhost:9000",
+  },
   modules: [
     {
       resolve: "@medusajs/medusa/payment",
@@ -48,7 +51,6 @@ module.exports = defineConfig({
         ],
       },
     },
-    // TODO: Confirm that this is working(probably need to add redis_url to env)
     {
       resolve: "@medusajs/medusa/cache-redis",
       options: {
