@@ -35,8 +35,8 @@ module.exports = defineConfig({
             },
           },
           {
-            resolve: "./src/modules/coinbase-commerce-payment",
-            id: "coinbase-commerce-payment",
+            resolve: "./src/modules/payment-coinbase-commerce",
+            id: "coinbase",
             options: {
               
             }
