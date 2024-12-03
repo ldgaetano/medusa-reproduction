@@ -35,10 +35,10 @@ module.exports = defineConfig({
             },
           },
           {
-            resolve: "./src/modules/payment-coinbase-commerce",
+            resolve: "./src/modules/payment-coinbase",
             id: "coinbase",
             options: {
-              
+              apiKey: process.env.COINBASE_COMMERCE_SECRET_KEY
             }
           }
         ],
