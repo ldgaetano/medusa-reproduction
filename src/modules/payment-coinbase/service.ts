@@ -1,8 +1,11 @@
-import { AbstractPaymentProvider } from "@medusajs/framework/utils"
+import { AbstractPaymentProvider, MedusaError } from "@medusajs/framework/utils"
 import { Logger } from "@medusajs/framework/types"
+import { CoinbaseClient } from "./services"
+import { CoinbaseClientOptions } from "./types"
 
 type InjectedDependencies = {
-    logger: Logger
+    logger: Logger,
+    coinbaseClient: CoinbaseClient
 }
 
 type Options = {
@@ -13,10 +16,11 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
 
     static identifier: string = "coinbase-commerce"
     protected logger_: Logger
-    protected options_: Options
+    protected options_: CoinbaseClientOptions
+    protected client: CoinbaseClient
 
     constructor(
-        { logger }: InjectedDependencies,
+        { logger, coinbaseClient }: InjectedDependencies,
         options: Options
     ) {
         // @ts-ignore
@@ -24,6 +28,17 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
 
         this.logger_ = logger
         this.options_ = options
+        this.client = coinbaseClient
+
+    }
+
+    static validateOptions(options: Record<any, any>): void | never {
+        if (!options.apiKey) {
+            throw new MedusaError(
+                MedusaError.Types.INVALID_DATA,
+                "API Key is required in the payment provider's options."
+            )
+        }
     }
 
 }
