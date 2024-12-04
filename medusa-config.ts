@@ -27,13 +27,13 @@ module.exports = defineConfig({
       resolve: "@medusajs/medusa/payment",
       options: {
         providers: [
-          {
-            resolve: "@medusajs/medusa/payment-stripe",
-            id: "stripe",
-            options: {
-              apiKey: process.env.STRIPE_SECRET_KEY,
-            },
-          },
+          // {
+          //   resolve: "@medusajs/medusa/payment-stripe",
+          //   id: "stripe",
+          //   options: {
+          //     apiKey: process.env.STRIPE_SECRET_KEY,
+          //   },
+          // },
           {
             resolve: "./src/modules/payment-coinbase",
             id: "coinbase",

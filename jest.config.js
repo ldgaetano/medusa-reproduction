@@ -15,6 +15,12 @@ module.exports = {
   testEnvironment: "node",
   moduleFileExtensions: ["js", "ts", "json"],
   modulePathIgnorePatterns: ["dist/"],
+
+  // Add these new configurations
+  clearMocks: true,
+  resetModules: true,
+  restoreMocks: true,
+
 }
 
 if (process.env.TEST_TYPE === "integration:http") {
