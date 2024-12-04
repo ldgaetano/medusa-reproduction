@@ -2,20 +2,20 @@ export type CoinbaseClientOptions = {
     apiKey: string
 }
 
-export type CreateChargeInput = {
-    buyer_locale: string,
-    cancel_url: string,
-    checkout_id: string,
+export interface CreateChargeInput {
+    buyer_locale?: string,
+    cancel_url?: string,
+    checkout_id?: string,
     local_price: {
         amount: string,
         currency: string
     },
-    metadata: Record<string, string>,
+    metadata?: Record<string, string>,
     pricing_type: PricingType,
-    redirect_url: string
+    redirect_url?: string
 }
 
-export type ChargeResponse = {
+export interface ChargeResponse {
     brand_color: string,
     brand_logo_url: string,
     charge_kind: ChargeKind,
@@ -97,13 +97,28 @@ export type ChargeResponse = {
 
 }
 
-export type AuthErrorResponse = {
+export interface AuthErrorResponse {
     type: string,
     message: string,
     code: string
 }
 
-export type PricingType = "fixed_price" | "no_price"
-export type ChargeKind = "WEB3"
-export type Status = "COMPLETED" | "EXPIRED" | "FAILED" | "NEW" | "PENDING" | "SIGNED"
+export enum PricingType {
+    FixedPrice = "fixed_price",
+    NoPrice = "no_price"
+}
+
+export enum ChargeKind {
+    Web3 = "WEB3"
+}
+
+export enum Status {
+    Complete = "COMPLETED",
+    Expired = "EXPIRED",
+    Failed = "FAILED",
+    New = "NEW",
+    Pending = "PENDING",
+    Signed = "SIGNED"
+}
+
 export type ChargeId = string
