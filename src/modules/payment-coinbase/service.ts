@@ -138,9 +138,7 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
         paymentData: Record<string, unknown>
     ): Promise<PaymentProviderError | PaymentProviderSessionResponse["data"]> {
         
-        // TODO
-        
-        return {}
+        return paymentData
 
     }
 
