@@ -1,7 +1,7 @@
-import { AbstractPaymentProvider, isPaymentProviderError, MedusaError } from "@medusajs/framework/utils"
+import { AbstractPaymentProvider, isPaymentProviderError, MedusaError, PaymentSessionStatus } from "@medusajs/framework/utils"
 import { CreatePaymentProviderSession, Logger, PaymentProviderError, PaymentProviderSessionResponse, PaymentSessionStatus, ProviderWebhookPayload, UpdatePaymentProviderSession, WebhookActionResult } from "@medusajs/framework/types"
 import { CoinbaseClient } from "./services"
-import { CoinbaseClientOptions, PricingType } from "./types"
+import { CoinbaseClientOptions, PricingType, Status } from "./types"
 import { EOL } from "os"
 
 type InjectedDependencies = {
@@ -73,7 +73,7 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
                     amount: amount.toString(),
                     currency: currency_code
                 },
-                pricing_type: PricingType.FixedPrice,
+                pricing_type: PricingType.FIXED_PRICE,
                 metadata: {
                     "payment_session_id": context.session_id
                 }
@@ -155,9 +155,27 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
 
     async getPaymentStatus(paymentSessionData: Record<string, unknown>): Promise<PaymentSessionStatus> {
 
-        // TODO
-
-        return "pending"
+        const chargeId = paymentSessionData.id as string
+        const chargeStatus = await this.client.getChargeStatus(chargeId)
+        
+        switch(chargeStatus) {
+            case Status.NEW:
+                return PaymentSessionStatus.PENDING
+            case Status.SIGNED:
+                return PaymentSessionStatus.REQUIRES_MORE
+            case Status.PENDING:
+                return PaymentSessionStatus.CAPTURED
+            case Status.COMPLETED:
+                return PaymentSessionStatus.CAPTURED
+            case Status.EXPIRED:
+                return PaymentSessionStatus.ERROR
+            case Status.FAILED:
+                return PaymentSessionStatus.ERROR
+            default:
+                return PaymentSessionStatus.PENDING
+            
+        }
+        
     }
 
     async retrievePayment(paymentSessionData: Record<string, unknown>): Promise<PaymentProviderError | PaymentProviderSessionResponse["data"]> {

@@ -104,21 +104,21 @@ export interface AuthErrorResponse {
 }
 
 export enum PricingType {
-    FixedPrice = "fixed_price",
-    NoPrice = "no_price"
+    FIXED_PRICE = "fixed_price",
+    NO_PRICE = "no_price"
 }
 
 export enum ChargeKind {
-    Web3 = "WEB3"
+    WEB3 = "WEB3"
 }
 
 export enum Status {
-    Completed = "COMPLETED",
-    Expired = "EXPIRED",
-    Failed = "FAILED",
-    New = "NEW",
-    Pending = "PENDING",
-    Signed = "SIGNED"
+    COMPLETED = "COMPLETED",
+    EXPIRED = "EXPIRED",
+    FAILED = "FAILED",
+    NEW = "NEW",
+    PENDING = "PENDING",
+    SIGNED = "SIGNED"
 }
 
 export type ChargeId = string
