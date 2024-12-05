@@ -113,7 +113,7 @@ export enum ChargeKind {
 }
 
 export enum Status {
-    Complete = "COMPLETED",
+    Completed = "COMPLETED",
     Expired = "EXPIRED",
     Failed = "FAILED",
     New = "NEW",

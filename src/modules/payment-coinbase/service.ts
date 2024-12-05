@@ -1,7 +1,8 @@
-import { AbstractPaymentProvider, MedusaError } from "@medusajs/framework/utils"
+import { AbstractPaymentProvider, isPaymentProviderError, MedusaError } from "@medusajs/framework/utils"
 import { CreatePaymentProviderSession, Logger, PaymentProviderError, PaymentProviderSessionResponse, PaymentSessionStatus, ProviderWebhookPayload, UpdatePaymentProviderSession, WebhookActionResult } from "@medusajs/framework/types"
 import { CoinbaseClient } from "./services"
-import { CoinbaseClientOptions } from "./types"
+import { CoinbaseClientOptions, PricingType } from "./types"
+import { EOL } from "os"
 
 type InjectedDependencies = {
     logger: Logger,
@@ -32,6 +33,21 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
 
     }
 
+    protected buildError(
+        message: string,
+        error: Error
+    ): PaymentProviderError {
+        return {
+            error: message,
+            code: "code" in error ? error.code as string: "unknown",
+            detail: isPaymentProviderError(error)
+            ? `${error.error}${EOL}${error.detail ?? ""}`
+            : "detail" in error
+            ? error.detail
+            : error.message ?? ""
+        }
+    }
+
     static validateOptions(options: Record<any, any>): void | never {
         if (!options.apiKey) {
             throw new MedusaError(
@@ -41,13 +57,45 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
         }
     }
 
-    async initiatePayment(context: CreatePaymentProviderSession): Promise<PaymentProviderError | PaymentProviderSessionResponse> {
-        
-        // TODO
-        console.log("Testing initiate payment.")
+    async initiatePayment(session: CreatePaymentProviderSession): Promise<PaymentProviderError | PaymentProviderSessionResponse> {
 
-        return {
-            data: {}
+        try {
+
+            const {
+                amount,
+                currency_code,
+                context
+            } = session
+
+            const charge = {
+
+                local_price: {
+                    amount: amount.toString(),
+                    currency: currency_code
+                },
+                pricing_type: PricingType.FixedPrice,
+                metadata: {
+                    "payment_session_id": context.session_id
+                }
+
+            }
+
+            const response = await this.client.createCharge(charge)
+
+            return {
+                ...response,
+                data: {
+                    id: response.id
+                }
+            }
+        
+        } catch (error) {
+
+            return this.buildError(
+                "Error initiating payment.",
+                error
+            )
+
         }
 
     }

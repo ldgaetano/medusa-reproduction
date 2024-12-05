@@ -1,6 +1,6 @@
 import { Logger, ConfigModule } from "@medusajs/framework/types"
 import { Modules } from "@medusajs/framework/utils"
-import { CoinbaseClientOptions, CreateChargeInput, ChargeResponse, ChargeId } from "../types"
+import { CoinbaseClientOptions, CreateChargeInput, ChargeResponse, ChargeId, Status } from "../types"
 import axios from "axios"
 
 type InjectedDependencies = {
@@ -73,4 +73,25 @@ export class CoinbaseClient {
             throw new Error("Unexpected error retrieving charge")
         }
     }
+
+    async getChargeStatus(chargeId: ChargeId): Promise<Status> {
+
+        try {
+    
+            const charge = await this.retrieveCharge(chargeId)
+            const event = charge.timeline.pop() // The most recent event.
+            
+            this.logger_.info("Charge status retrieved.")
+            return event.status
+        
+        } catch(error) {
+            if (axios.isAxiosError(error)) {
+                this.logger_.error("Error retrieving charge status")
+                throw error
+            }
+            throw new Error("Unexpected error retrieving charge status")
+        }
+
+    }
+
 }
