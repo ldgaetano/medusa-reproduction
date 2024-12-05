@@ -216,11 +216,11 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
 
     async updatePayment(context: UpdatePaymentProviderSession): Promise<PaymentProviderError | PaymentProviderSessionResponse> {
         
-        // TODO
-
-        return {
-            data: {}
-        }
+        const error = new Error("Cannot udpate charge.")
+        return this.buildError(
+            "Cannot update payment.",
+            error
+        )
 
     }
 
