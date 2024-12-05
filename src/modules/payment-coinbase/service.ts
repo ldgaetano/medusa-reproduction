@@ -143,26 +143,32 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
     }
 
     async cancelPayment(paymentData: Record<string, unknown>): Promise<PaymentProviderError | PaymentProviderSessionResponse["data"]> {
-        
-        // TODO
 
-        return {}
+        const error = new Error("Cannot cancel charge.")
+        return this.buildError(
+            "Cannot cancel payment.",
+            error
+        )
 
     }
 
     async deletePayment(paymentSessionData: Record<string, unknown>): Promise<PaymentProviderError | PaymentProviderSessionResponse["data"]> {
         
-        // TODO
-
-        return {}
+        const error = new Error("Cannot delete charge.")
+        return this.buildError(
+            "Cannot delete payment.",
+            error
+        )
 
     }
 
     async refundPayment(paymentData: Record<string, unknown>, refundAmount: number): Promise<PaymentProviderError | PaymentProviderSessionResponse["data"]> {
         
-        // TODO
-
-        return {}
+        const error = new Error("Cannot refund charge.")
+        return this.buildError(
+            "Cannot refund payment.",
+            error
+        )
 
     }
 
