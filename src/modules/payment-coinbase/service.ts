@@ -199,9 +199,18 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
 
     async retrievePayment(paymentSessionData: Record<string, unknown>): Promise<PaymentProviderError | PaymentProviderSessionResponse["data"]> {
         
-        // TODO
+        try {
 
-        return {}
+            const chargeId = paymentSessionData.id as string
+            const charge = await this.client.retrieveCharge(chargeId)
+            return charge as unknown as PaymentProviderSessionResponse["data"]
+
+        } catch(error) {
+            return this.buildError(
+                "Error retrieving payment.",
+                error
+            )
+        }
 
     }
 
