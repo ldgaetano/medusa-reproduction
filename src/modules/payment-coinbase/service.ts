@@ -110,11 +110,26 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
         }
     > {
 
-        // TODO
-
-        return {
-            data: {},
-            status: "authorized"
+        const chargeId = paymentSessionData.id as string
+        const charge = await this.client.retrieveCharge(chargeId)
+        const status = await this.getPaymentStatus(paymentSessionData)
+        
+        if (status === PaymentSessionStatus.CAPTURED ||
+            status == PaymentSessionStatus.REQUIRES_MORE
+        ) {
+            return {
+                data: {
+                    ...charge,
+                    id: chargeId
+                },
+                status: status
+            }
+        } else {
+            const error = new Error("Invalid charge status.")
+            return this.buildError(
+                "Invalid payment status for authorization.",
+                error
+            )
         }
 
     }
@@ -175,7 +190,7 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
                 return PaymentSessionStatus.PENDING
             
         }
-        
+
     }
 
     async retrievePayment(paymentSessionData: Record<string, unknown>): Promise<PaymentProviderError | PaymentProviderSessionResponse["data"]> {
