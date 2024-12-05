@@ -2,10 +2,23 @@ import { Logger, ConfigModule } from "@medusajs/framework/types"
 import { Modules } from "@medusajs/framework/utils"
 import { CoinbaseClientOptions, CreateChargeInput, ChargeResponse, ChargeId, Status } from "../types"
 import axios from "axios"
+import { createHmac } from 'crypto';
 
 type InjectedDependencies = {
     logger: Logger,
     configModule: ConfigModule
+}
+
+class SignatureVerificationError extends Error {
+    sigHeader: string;
+    httpBody: string;
+
+    constructor(message: string, sigHeader: string, httpBody: string) {
+        super(message);
+        this.sigHeader = sigHeader;
+        this.httpBody = httpBody;
+        this.name = 'SignatureVerificationError';
+    }
 }
 
 export class CoinbaseClient {
@@ -92,6 +105,54 @@ export class CoinbaseClient {
             throw new Error("Unexpected error retrieving charge status")
         }
 
+    }
+
+    protected verify_header(payload, sig_header, secret): boolean {
+
+        
+
+    }
+
+    private secureCompare(a: string, b: string): boolean {
+       
+        if (a.length !== b.length) {
+            return false;
+        }
+    
+        let res = 0;
+        for (let i = 0; i < a.length; i++) {
+            res |= a.charCodeAt(i) ^ b.charCodeAt(i);
+        }
+    
+        return res === 0;
+    }
+
+    private computeSignature(payload: string, secret: string): string {
+        return createHmac('sha256', secret)
+            .update(payload)
+            .digest('hex');
+    }
+
+    verifyHeader(payload: string, sigHeader: string, secret: string): boolean {
+        if (!payload || !sigHeader || !secret) {
+            throw new SignatureVerificationError(
+                "Missing payload or signature", 
+                sigHeader, 
+                payload
+            );
+        }
+    
+        const expectedSig = this.computeSignature(payload, secret);
+    
+        if (!this.secureCompare(expectedSig, sigHeader)) {
+            throw new SignatureVerificationError(
+                "No signatures found matching the expected signature for payload",
+                sigHeader, 
+                payload
+            );
+        }
+    
+        return true;
     }
 
 }

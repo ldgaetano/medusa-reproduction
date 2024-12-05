@@ -1,7 +1,7 @@
-import { AbstractPaymentProvider, isPaymentProviderError, MedusaError, PaymentSessionStatus } from "@medusajs/framework/utils"
+import { AbstractPaymentProvider, BigNumber, isPaymentProviderError, MedusaError, PaymentActions, PaymentSessionStatus } from "@medusajs/framework/utils"
 import { CreatePaymentProviderSession, Logger, PaymentProviderError, PaymentProviderSessionResponse, PaymentSessionStatus, ProviderWebhookPayload, UpdatePaymentProviderSession, WebhookActionResult } from "@medusajs/framework/types"
 import { CoinbaseClient } from "./services"
-import { CoinbaseClientOptions, PricingType, Status } from "./types"
+import { CoinbaseClientOptions, CoinbaseCommerceWebhookEvent, PricingType, Status, WebhookEventType } from "./types"
 import { EOL } from "os"
 
 type InjectedDependencies = {
@@ -10,7 +10,8 @@ type InjectedDependencies = {
 }
 
 type Options = {
-    apiKey: string
+    apiKey: string,
+    webhookSecret: string
 }
 
 class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Options> {
@@ -205,7 +206,7 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
             const charge = await this.client.retrieveCharge(chargeId)
             return charge as unknown as PaymentProviderSessionResponse["data"]
 
-        } catch(error) {
+        } catch (error) {
             return this.buildError(
                 "Error retrieving payment.",
                 error
@@ -224,13 +225,60 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
 
     }
 
-    async getWebhookActionAndData(data: ProviderWebhookPayload["payload"]): Promise<WebhookActionResult> {
+    async getWebhookActionAndData(payload: ProviderWebhookPayload["payload"]): Promise<WebhookActionResult> {
         
-        // TODO
+        try {
 
-        return {
-            action: "not_supported"
+            const event = this.constructWebhookEvent(payload)
+
+            switch(event.event.type) {
+                case WebhookEventType.EVENT_CREATED:
+                    return {
+                        action: PaymentActions.NOT_SUPPORTED
+                    }
+                case WebhookEventType.EVENT_PENDING:
+                    return {
+                        action: PaymentActions.SUCCESSFUL
+                    }
+                case WebhookEventType.EVENT_CONFIRMED:
+                    return {
+                        action: PaymentActions.SUCCESSFUL
+                    }
+                case WebhookEventType.EVENT_FAILED:
+                    return {
+                        action: PaymentActions.FAILED
+                    }
+                default:
+                    return {
+                        action: PaymentActions.NOT_SUPPORTED
+                    }
+            }
+
+        } catch (error) {
+            return {
+                action: PaymentActions.FAILED,
+                data: {
+                    session_id: (payload.data.metadata as Record<string, any>).payment_session_id,
+                    amount: new BigNumber(payload.data.amount as number)
+                }
+            }
         }
+
+    }
+
+    constructWebhookEvent(payload: ProviderWebhookPayload["payload"]): CoinbaseCommerceWebhookEvent {
+
+        const {
+            data,
+            rawData,
+            headers
+        } = payload
+
+        const signature = headers["X-CC-Webhook-Signature"] as string
+
+        const isVerified = this.client.verifyHeader(rawData as string, signature, this.options_.webhookSecret)
+        
+        return data as unknown as CoinbaseCommerceWebhookEvent
 
     }
 
