@@ -107,12 +107,6 @@ export class CoinbaseClient {
 
     }
 
-    protected verify_header(payload, sig_header, secret): boolean {
-
-        
-
-    }
-
     private secureCompare(a: string, b: string): boolean {
        
         if (a.length !== b.length) {

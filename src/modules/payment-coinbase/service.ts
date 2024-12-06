@@ -1,5 +1,5 @@
 import { AbstractPaymentProvider, BigNumber, isPaymentProviderError, MedusaError, PaymentActions, PaymentSessionStatus } from "@medusajs/framework/utils"
-import { CreatePaymentProviderSession, Logger, PaymentProviderError, PaymentProviderSessionResponse, PaymentSessionStatus, ProviderWebhookPayload, UpdatePaymentProviderSession, WebhookActionResult } from "@medusajs/framework/types"
+import { CreatePaymentProviderSession, Logger, PaymentProviderError, PaymentProviderSessionResponse, ProviderWebhookPayload, UpdatePaymentProviderSession, WebhookActionResult } from "@medusajs/framework/types"
 import { CoinbaseClient } from "./services"
 import { CoinbaseClientOptions, CoinbaseCommerceWebhookEvent, PricingType, Status, WebhookEventType } from "./types"
 import { EOL } from "os"
