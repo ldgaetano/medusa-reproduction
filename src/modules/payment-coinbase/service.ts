@@ -234,19 +234,35 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
             switch(event.event.type) {
                 case WebhookEventType.EVENT_CREATED:
                     return {
-                        action: PaymentActions.NOT_SUPPORTED
+                        action: PaymentActions.NOT_SUPPORTED,
+                        data: {
+                            session_id: event.event.data.metadata.payment_session_id,
+                            amount: new BigNumber(event.event.data.pricing.local.amount)
+                        }
                     }
                 case WebhookEventType.EVENT_PENDING:
                     return {
-                        action: PaymentActions.SUCCESSFUL
+                        action: PaymentActions.SUCCESSFUL,
+                        data: {
+                            session_id: event.event.data.metadata.payment_session_id,
+                            amount: new BigNumber(event.event.data.pricing.local.amount)
+                        }
                     }
                 case WebhookEventType.EVENT_CONFIRMED:
                     return {
-                        action: PaymentActions.SUCCESSFUL
+                        action: PaymentActions.SUCCESSFUL,
+                        data: {
+                            session_id: event.event.data.metadata.payment_session_id,
+                            amount: new BigNumber(event.event.data.pricing.local.amount)
+                        }
                     }
                 case WebhookEventType.EVENT_FAILED:
                     return {
-                        action: PaymentActions.FAILED
+                        action: PaymentActions.FAILED,
+                        data: {
+                            session_id: event.event.data.metadata.payment_session_id,
+                            amount: new BigNumber(event.event.data.pricing.local.amount)
+                        }
                     }
                 default:
                     return {
@@ -258,8 +274,8 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
             return {
                 action: PaymentActions.FAILED,
                 data: {
-                    session_id: (payload.data.metadata as Record<string, any>).payment_session_id,
-                    amount: new BigNumber(payload.data.amount as number)
+                    session_id: (payload.data as unknown as CoinbaseCommerceWebhookEvent).event.data.metadata.payment_session_id,
+                    amount: new BigNumber((payload.data as unknown as CoinbaseCommerceWebhookEvent).event.data.pricing.local.amount)
                 }
             }
         }
@@ -276,7 +292,7 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
 
         const signature = headers["X-CC-Webhook-Signature"] as string
 
-        const isVerified = this.client.verifyHeader(rawData as string, signature, this.options_.webhookSecret)
+        this.client.verifyHeader(rawData as string, signature, this.options_.webhookSecret)
         
         return data as unknown as CoinbaseCommerceWebhookEvent
 
