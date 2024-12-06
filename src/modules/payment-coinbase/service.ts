@@ -1,7 +1,8 @@
-import { AbstractPaymentProvider, MedusaError } from "@medusajs/framework/utils"
-import { CreatePaymentProviderSession, Logger, PaymentProviderError, PaymentProviderSessionResponse, PaymentSessionStatus, ProviderWebhookPayload, UpdatePaymentProviderSession, WebhookActionResult } from "@medusajs/framework/types"
+import { AbstractPaymentProvider, BigNumber, isPaymentProviderError, MedusaError, PaymentActions, PaymentSessionStatus } from "@medusajs/framework/utils"
+import { CreatePaymentProviderSession, Logger, PaymentProviderError, PaymentProviderSessionResponse, ProviderWebhookPayload, UpdatePaymentProviderSession, WebhookActionResult } from "@medusajs/framework/types"
 import { CoinbaseClient } from "./services"
-import { CoinbaseClientOptions } from "./types"
+import { CoinbaseClientOptions, CoinbaseCommerceWebhookEvent, PricingType, Status, WebhookEventType } from "./types"
+import { EOL } from "os"
 
 type InjectedDependencies = {
     logger: Logger,
@@ -9,7 +10,8 @@ type InjectedDependencies = {
 }
 
 type Options = {
-    apiKey: string
+    apiKey: string,
+    webhookSecret: string
 }
 
 class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Options> {
@@ -32,6 +34,21 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
 
     }
 
+    protected buildError(
+        message: string,
+        error: Error
+    ): PaymentProviderError {
+        return {
+            error: message,
+            code: "code" in error ? error.code as string: "unknown",
+            detail: isPaymentProviderError(error)
+            ? `${error.error}${EOL}${error.detail ?? ""}`
+            : "detail" in error
+            ? error.detail
+            : error.message ?? ""
+        }
+    }
+
     static validateOptions(options: Record<any, any>): void | never {
         if (!options.apiKey) {
             throw new MedusaError(
@@ -41,13 +58,45 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
         }
     }
 
-    async initiatePayment(context: CreatePaymentProviderSession): Promise<PaymentProviderError | PaymentProviderSessionResponse> {
-        
-        // TODO
-        console.log("Testing initiate payment.")
+    async initiatePayment(session: CreatePaymentProviderSession): Promise<PaymentProviderError | PaymentProviderSessionResponse> {
 
-        return {
-            data: {}
+        try {
+
+            const {
+                amount,
+                currency_code,
+                context
+            } = session
+
+            const charge = {
+
+                local_price: {
+                    amount: amount.toString(),
+                    currency: currency_code
+                },
+                pricing_type: PricingType.FIXED_PRICE,
+                metadata: {
+                    "payment_session_id": context.session_id
+                }
+
+            }
+
+            const response = await this.client.createCharge(charge)
+
+            return {
+                ...response,
+                data: {
+                    id: response.id
+                }
+            }
+        
+        } catch (error) {
+
+            return this.buildError(
+                "Error initiating payment.",
+                error
+            )
+
         }
 
     }
@@ -62,11 +111,26 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
         }
     > {
 
-        // TODO
-
-        return {
-            data: {},
-            status: "authorized"
+        const chargeId = paymentSessionData.id as string
+        const charge = await this.client.retrieveCharge(chargeId)
+        const status = await this.getPaymentStatus(paymentSessionData)
+        
+        if (status === PaymentSessionStatus.CAPTURED ||
+            status == PaymentSessionStatus.REQUIRES_MORE
+        ) {
+            return {
+                data: {
+                    ...charge,
+                    id: chargeId
+                },
+                status: status
+            }
+        } else {
+            const error = new Error("Invalid charge status.")
+            return this.buildError(
+                "Invalid payment status for authorization.",
+                error
+            )
         }
 
     }
@@ -75,68 +139,162 @@ class CoinbaseCommercePaymentProviderService extends AbstractPaymentProvider<Opt
         paymentData: Record<string, unknown>
     ): Promise<PaymentProviderError | PaymentProviderSessionResponse["data"]> {
         
-        // TODO
-        
-        return {}
+        return paymentData
 
     }
 
     async cancelPayment(paymentData: Record<string, unknown>): Promise<PaymentProviderError | PaymentProviderSessionResponse["data"]> {
-        
-        // TODO
 
-        return {}
+        const error = new Error("Cannot cancel charge.")
+        return this.buildError(
+            "Cannot cancel payment.",
+            error
+        )
 
     }
 
     async deletePayment(paymentSessionData: Record<string, unknown>): Promise<PaymentProviderError | PaymentProviderSessionResponse["data"]> {
         
-        // TODO
-
-        return {}
+        const error = new Error("Cannot delete charge.")
+        return this.buildError(
+            "Cannot delete payment.",
+            error
+        )
 
     }
 
     async refundPayment(paymentData: Record<string, unknown>, refundAmount: number): Promise<PaymentProviderError | PaymentProviderSessionResponse["data"]> {
         
-        // TODO
-
-        return {}
+        const error = new Error("Cannot refund charge.")
+        return this.buildError(
+            "Cannot refund payment.",
+            error
+        )
 
     }
 
     async getPaymentStatus(paymentSessionData: Record<string, unknown>): Promise<PaymentSessionStatus> {
 
-        // TODO
+        const chargeId = paymentSessionData.id as string
+        const chargeStatus = await this.client.getChargeStatus(chargeId)
+        
+        switch(chargeStatus) {
+            case Status.NEW:
+                return PaymentSessionStatus.PENDING
+            case Status.SIGNED:
+                return PaymentSessionStatus.REQUIRES_MORE
+            case Status.PENDING:
+                return PaymentSessionStatus.CAPTURED
+            case Status.COMPLETED:
+                return PaymentSessionStatus.CAPTURED
+            case Status.EXPIRED:
+                return PaymentSessionStatus.ERROR
+            case Status.FAILED:
+                return PaymentSessionStatus.ERROR
+            default:
+                return PaymentSessionStatus.PENDING
+            
+        }
 
-        return "pending"
     }
 
     async retrievePayment(paymentSessionData: Record<string, unknown>): Promise<PaymentProviderError | PaymentProviderSessionResponse["data"]> {
         
-        // TODO
+        try {
 
-        return {}
+            const chargeId = paymentSessionData.id as string
+            const charge = await this.client.retrieveCharge(chargeId)
+            return charge as unknown as PaymentProviderSessionResponse["data"]
+
+        } catch (error) {
+            return this.buildError(
+                "Error retrieving payment.",
+                error
+            )
+        }
 
     }
 
     async updatePayment(context: UpdatePaymentProviderSession): Promise<PaymentProviderError | PaymentProviderSessionResponse> {
         
-        // TODO
+        const error = new Error("Cannot udpate charge.")
+        return this.buildError(
+            "Cannot update payment.",
+            error
+        )
 
-        return {
-            data: {}
+    }
+
+    async getWebhookActionAndData(payload: ProviderWebhookPayload["payload"]): Promise<WebhookActionResult> {
+        
+        try {
+
+            const event = this.constructWebhookEvent(payload)
+
+            switch(event.event.type) {
+                case WebhookEventType.EVENT_CREATED:
+                    return {
+                        action: PaymentActions.NOT_SUPPORTED,
+                        data: {
+                            session_id: event.event.data.metadata.payment_session_id,
+                            amount: new BigNumber(event.event.data.pricing.local.amount)
+                        }
+                    }
+                case WebhookEventType.EVENT_PENDING:
+                    return {
+                        action: PaymentActions.SUCCESSFUL,
+                        data: {
+                            session_id: event.event.data.metadata.payment_session_id,
+                            amount: new BigNumber(event.event.data.pricing.local.amount)
+                        }
+                    }
+                case WebhookEventType.EVENT_CONFIRMED:
+                    return {
+                        action: PaymentActions.SUCCESSFUL,
+                        data: {
+                            session_id: event.event.data.metadata.payment_session_id,
+                            amount: new BigNumber(event.event.data.pricing.local.amount)
+                        }
+                    }
+                case WebhookEventType.EVENT_FAILED:
+                    return {
+                        action: PaymentActions.FAILED,
+                        data: {
+                            session_id: event.event.data.metadata.payment_session_id,
+                            amount: new BigNumber(event.event.data.pricing.local.amount)
+                        }
+                    }
+                default:
+                    return {
+                        action: PaymentActions.NOT_SUPPORTED
+                    }
+            }
+
+        } catch (error) {
+            return {
+                action: PaymentActions.FAILED,
+                data: {
+                    session_id: (payload.data as unknown as CoinbaseCommerceWebhookEvent).event.data.metadata.payment_session_id,
+                    amount: new BigNumber((payload.data as unknown as CoinbaseCommerceWebhookEvent).event.data.pricing.local.amount)
+                }
+            }
         }
 
     }
 
-    async getWebhookActionAndData(data: ProviderWebhookPayload["payload"]): Promise<WebhookActionResult> {
-        
-        // TODO
+    constructWebhookEvent(payload: ProviderWebhookPayload["payload"]): CoinbaseCommerceWebhookEvent {
 
-        return {
-            action: "not_supported"
-        }
+        const {
+            data,
+            rawData,
+            headers
+        } = payload
+
+        const signature = headers["X-CC-Webhook-Signature"] as string
+
+        this.client.verifyHeader(rawData as string, signature, this.options_.webhookSecret)
+        
+        return data as unknown as CoinbaseCommerceWebhookEvent
 
     }
 

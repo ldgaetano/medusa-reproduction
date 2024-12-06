@@ -1,5 +1,6 @@
 export type CoinbaseClientOptions = {
-    apiKey: string
+    apiKey: string,
+    webhookSecret: string
 }
 
 export interface CreateChargeInput {
@@ -92,7 +93,7 @@ export interface ChargeResponse {
             }
         },
         contract_address: string,
-        contract_addresses: Record<any, any> | null
+        contract_addresses: Record<string, string> | null
     }
 
 }
@@ -104,21 +105,44 @@ export interface AuthErrorResponse {
 }
 
 export enum PricingType {
-    FixedPrice = "fixed_price",
-    NoPrice = "no_price"
+    FIXED_PRICE = "fixed_price",
+    NO_PRICE = "no_price"
 }
 
 export enum ChargeKind {
-    Web3 = "WEB3"
+    WEB3 = "WEB3"
 }
 
 export enum Status {
-    Complete = "COMPLETED",
-    Expired = "EXPIRED",
-    Failed = "FAILED",
-    New = "NEW",
-    Pending = "PENDING",
-    Signed = "SIGNED"
+    COMPLETED = "COMPLETED",
+    EXPIRED = "EXPIRED",
+    FAILED = "FAILED",
+    NEW = "NEW",
+    PENDING = "PENDING",
+    SIGNED = "SIGNED"
 }
 
 export type ChargeId = string
+
+export interface CoinbaseCommerceWebhookEvent {
+    attempt_number: number,
+    event: {
+        id: string,
+        resource: string,
+        type: WebhookEventType,
+        api_version: string,
+        created_at: string,
+        data: ChargeResponse & {
+            metadata: Record<string, string>
+        }
+    }
+    id: string,
+    scheduled_for: string,
+}
+
+export enum WebhookEventType {
+    EVENT_CREATED = "charge:created",
+    EVENT_PENDING = "charge:pending",
+    EVENT_CONFIRMED = "charge:confirmed",
+    EVENT_FAILED = "charge:failed"
+}
