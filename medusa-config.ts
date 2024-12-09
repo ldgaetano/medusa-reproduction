@@ -38,7 +38,8 @@ module.exports = defineConfig({
             resolve: "./src/modules/payment-coinbase",
             id: "coinbase",
             options: {
-              apiKey: process.env.COINBASE_COMMERCE_SECRET_KEY
+              apiKey: process.env.COINBASE_COMMERCE_SECRET_KEY,
+              webhookSecret: process.env.COINBASE_COMMECE_WEBHOOK_SECRET
             }
           }
         ],
@@ -48,14 +49,43 @@ module.exports = defineConfig({
       resolve: "@medusajs/medusa/file",
       options: {
         providers: [
+          // {
+          //   resolve: "@medusajs/medusa/file-local",
+          //   id: "local",
+          //   options: {
+          //     backend_url: `${
+          //       process.env.BACKEND_URL || "http://localhost:9000"
+          //     }/static`,
+          //   },
+          // },
           {
-            resolve: "@medusajs/medusa/file-local",
-            id: "local",
+
+            resolve: "@medusajs/medusa/file-s3",
+
+            id: "s3",
+
             options: {
-              backend_url: `${
-                process.env.BACKEND_URL || "http://localhost:9000"
-              }/static`,
+
+              file_url: process.env.S3_FILE_URL,
+
+              access_key_id: process.env.S3_ACCESS_KEY_ID,
+
+              secret_access_key: process.env.S3_SECRET_ACCESS_KEY,
+
+              region: process.env.S3_REGION,
+
+              bucket: process.env.S3_BUCKET,
+
+              endpoint: process.env.S3_ENDPOINT,
+
+              additional_client_config: {
+
+                forcePathStyle: true,
+
+              },
+
             },
+
           },
         ],
       },
